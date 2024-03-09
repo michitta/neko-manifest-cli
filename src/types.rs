@@ -1,6 +1,18 @@
 use std::collections::HashMap;
 
+use clap::Parser;
 use serde::Deserialize;
+
+// Cli types
+#[derive(Parser)]
+pub struct Cli {
+    pub server_name: String,
+    pub loader: String,
+    pub loader_version: String,
+    pub mc_version: String,
+}
+
+// Tools types
 
 #[derive(Deserialize)]
 pub struct MojangVersionManifest {
@@ -39,7 +51,7 @@ pub struct FabricLibraries {
 }
 
 pub struct AssetIndex {
-    id: String,
+    pub id: String,
 }
 
 #[derive(Deserialize)]
@@ -79,7 +91,7 @@ pub struct MojangOs {
     pub name: OsType,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 pub enum OsType {
     #[serde(rename = "osx")]
     MacOs,
@@ -104,33 +116,39 @@ pub struct MojangDownloads {
 }
 
 pub struct NekoManifest {
-    main_class: String,
-    libraries: Vec<Library>,
-    minecraft_arguments: Option<String>,
-    arguments: Arguments,
+    pub main_class: String,
+    pub libraries: Vec<Library>,
+    pub minecraft_arguments: Option<String>,
+    pub arguments: Arguments,
 }
 
 #[derive(Deserialize)]
 struct Library {
-    name: String,
-    downloads: Downloads,
+    pub name: String,
+    pub downloads: Downloads,
 }
 
 #[derive(Deserialize)]
 struct Downloads {
-    artifact: Artifact,
+    pub artifact: Artifact,
 }
 
 #[derive(Deserialize)]
 struct Artifact {
-    path: String,
-    sha1: String,
-    size: u64,
-    url: String,
+    pub path: String,
+    pub sha1: String,
+    pub size: u64,
+    pub url: String,
 }
 
 #[derive(Deserialize)]
 struct Arguments {
-    game: Vec<String>,
-    jvm: Vec<String>,
+    pub game: Vec<String>,
+    pub jvm: Vec<String>,
+}
+
+#[derive(Deserialize, PartialEq, Eq, Hash)]
+pub struct LibraryObject {
+    pub path: String,
+    pub os: Vec<OsType>,
 }
