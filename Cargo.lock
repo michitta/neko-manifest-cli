@@ -418,6 +418,7 @@ name = "neko-manifest-creator"
 version = "0.1.0"
 dependencies = [
  "reqwest",
+ "serde",
 ]
 
 [[package]]
