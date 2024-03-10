@@ -131,3 +131,12 @@ pub struct LibraryObject {
     pub path: String,
     pub os: Vec<OsType>,
 }
+
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
+pub struct ForgeManifest {
+    pub mainClass: String,
+    pub libraries: Vec<MojangLibrary>,
+    pub minecraftArguments: String,
+    pub arguments: FabricArguments,
+}

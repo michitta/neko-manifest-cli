@@ -1,7 +1,7 @@
 use clap::Parser;
-use std::{collections::HashSet, fs::create_dir, path::Path};
+use std::{collections::HashSet, path::Path};
 use tokio::{
-    fs::{self, File},
+    fs::{self, create_dir, File},
     io::AsyncWriteExt,
 };
 use types::{
@@ -24,12 +24,12 @@ async fn main() {
     println!("----------------------------");
 
     if args.loader == "fabric" {
-        println!("Creating fabric manifest...");
+        println!("Starting fabric manifest creation...");
         create_fabric_manifest(args.server_name, args.loader_version, args.mc_version)
             .await
             .unwrap();
     } else if args.loader == "forge" {
-        println!("Creating forge manifest...");
+        println!("Starting forge manifest creation...");
     } else {
         println!("Supported loader not found");
     }
@@ -170,7 +170,7 @@ async fn create_fabric_manifest(
 
     // Проверка наличия папки, если нет, то создаём
     if !Path::new(&server_name).exists() {
-        create_dir(&server_name)?;
+        create_dir(&server_name).await?;
     }
 
     for lib in &libs {
