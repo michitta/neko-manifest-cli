@@ -1,5 +1,5 @@
 [package]
-name = "neko-manifest-creator"
+name = "neko-manifest-cli"
 authors = ["michitta"]
 repository = "https://github.com/michitta/neko-manifest-cli"
 version = "0.0.1"

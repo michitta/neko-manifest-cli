@@ -530,7 +530,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "neko-manifest-creator"
+name = "neko-manifest-cli"
 version = "0.0.1"
 dependencies = [
  "clap",
