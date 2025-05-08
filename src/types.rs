@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,7 @@ pub struct Cli {
     pub loader: String,
     pub loader_version: String,
     pub mc_version: String,
+    pub java_version: Option<String>
 }
 
 // Tools types
@@ -139,4 +140,87 @@ pub struct ForgeManifest {
     pub libraries: Vec<MojangLibrary>,
     pub minecraftArguments: String,
     pub arguments: FabricArguments,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct JavaRuntime {
+    pub linux: PlatformVersions,
+    pub mac_os: PlatformVersions,
+    pub mac_os_arm64: PlatformVersions,
+    pub windows_x64: PlatformVersions,
+    pub windows_arm64: PlatformVersions,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct PlatformVersions {
+    pub java_runtime_alpha: Vec<VersionDetails>,
+    pub java_runtime_beta: Vec<VersionDetails>,
+    pub java_runtime_delta: Vec<VersionDetails>,
+    pub java_runtime_gamma: Vec<VersionDetails>,
+    pub java_runtime_gamma_snapshot: Vec<VersionDetails>,
+    pub jre_legacy: Vec<VersionDetails>,
+    pub minecraft_java_exe: Vec<VersionDetails>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct VersionDetails {
+    pub availability: Availability,
+    pub manifest: Manifest,
+    pub version: Version,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Availability {
+    pub group: u32,
+    pub progress: u32,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Manifest {
+    pub sha1: String,
+    pub size: u32,
+    pub url: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Version {
+    pub name: String,
+    pub released: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SelectedJavaManifest {
+    pub files: HashMap<String, FileEntry>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum FileEntry {
+    #[serde(rename = "directory")]
+    Directory,
+
+    #[serde(rename = "file")]
+    File {
+        downloads: DownloadVariants,
+        #[serde(default)]
+        executable: bool,
+    },
+
+    #[serde(other)]
+    Ignored, // Игнорируем все неизвестные значения
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DownloadVariants {
+    pub lzma: Option<DownloadInfo>,
+    pub raw: DownloadInfo,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DownloadInfo {
+    pub sha1: String,
+    pub size: u64,
+    pub url: String,
 }
