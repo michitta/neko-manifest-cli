@@ -1,47 +1,55 @@
 use clap::Parser;
 use futures::future::join_all;
-use std::{any::{self, Any}, collections::HashSet, fmt::Debug, path::Path, sync::Arc};
+use std::{
+    any::{self, Any},
+    collections::HashSet,
+    fmt::Debug,
+    path::Path,
+    sync::Arc,
+};
 use tokio::{
     fs::{self, create_dir, File},
-    io::AsyncWriteExt, sync::Semaphore,
+    io::AsyncWriteExt,
+    sync::Semaphore,
 };
 use types::{
-    Cli, FabricLibraries, FabricManifest, FileEntry, JavaRuntime, LibraryObject, MojangClientManifest, MojangVersionManifest, NekoManifest, OsType, PlatformVersions, SelectedJavaManifest
+    Cli, FabricLibraries, FabricManifest, FileEntry, JavaRuntime, LibraryObject,
+    MojangClientManifest, MojangVersionManifest, NekoManifest, OsType, PlatformVersions,
+    SelectedJavaManifest,
 };
 
-mod types;
 mod downloader;
+mod types;
 
 #[tokio::main]
 async fn main() {
-    download_java(21).await.ok();
-    download_java(17).await.ok();
+    // download_java(21).await.ok();
+    // download_java(17).await.ok();
 
+    let args = Cli::parse();
+    println!("Welcome to Neko Manifest CLI!");
+    println!("Version: {}", env!("CARGO_PKG_VERSION"));
+    println!("----------------------------");
+    println!("Server name: {}", args.server_name);
+    println!("Selected loader: {}", args.loader);
+    println!("Selected loader version: {}", args.loader_version);
+    println!("Selected mc version: {}", args.mc_version);
+    match args.java_version {
+        Some(arg) => println!("Downloading java version: {}", arg),
+        None => {}
+    }
+    println!("----------------------------");
 
-    // let args = Cli::parse();
-    // println!("Welcome to Neko Manifest CLI!");
-    // println!("Version: {}", env!("CARGO_PKG_VERSION"));
-    // println!("----------------------------");
-    // println!("Server name: {}", args.server_name);
-    // println!("Selected loader: {}", args.loader);
-    // println!("Selected loader version: {}", args.loader_version);
-    // println!("Selected mc version: {}", args.mc_version);
-    // match args.java_version {
-    //     Some(arg) => println!("Downloading java version: {}", arg),
-    //     None => {}
-    // }
-    // println!("----------------------------");
-
-    // if args.loader == "fabric" {
-    //     println!("Starting fabric manifest creation...");
-    //     create_fabric_manifest(args.server_name, args.loader_version, args.mc_version)
-    //         .await
-    //         .unwrap();
-    // } else if args.loader == "forge" {
-    //     println!("Starting forge manifest creation...");
-    // } else {
-    //     println!("Supported loader not found");
-    // }
+    if args.loader == "fabric" {
+        println!("Starting fabric manifest creation...");
+        create_fabric_manifest(args.server_name, args.loader_version, args.mc_version)
+            .await
+            .unwrap();
+    } else if args.loader == "forge" {
+        println!("Starting forge manifest creation...");
+    } else {
+        println!("Supported loader not found");
+    }
 }
 
 fn resolve_maven(file: &str) -> String {
@@ -260,7 +268,11 @@ async fn create_fabric_manifest(
     Ok(())
 }
 
-async fn java_downloader(selected_java_manifest: SelectedJavaManifest, name: &str, platform: &str)-> Result<(), Box<dyn std::error::Error>> {
+async fn java_downloader(
+    selected_java_manifest: SelectedJavaManifest,
+    name: &str,
+    platform: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Called!");
     let semaphore = Arc::new(Semaphore::new(4));
 
@@ -271,7 +283,10 @@ async fn java_downloader(selected_java_manifest: SelectedJavaManifest, name: &st
             FileEntry::Directory => {
                 println!("[IGNORED] Пустая папка: {}", path);
             }
-            FileEntry::File { downloads, executable } => {
+            FileEntry::File {
+                downloads,
+                executable,
+            } => {
                 let permit = Arc::clone(&semaphore).acquire_owned().await.unwrap();
                 let path = format!("{}/{}/{}", platform, name, path);
                 let url = downloads.raw.url.clone();
@@ -323,7 +338,7 @@ async fn java_downloader(selected_java_manifest: SelectedJavaManifest, name: &st
     Ok(())
 }
 
-async fn download_java(version: u64) -> Result<(), Box<dyn std::error::Error>>  {
+async fn download_java(version: u64) -> Result<(), Box<dyn std::error::Error>> {
     let javas_manifest = reqwest::get("https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json").await?
     .json::<JavaRuntime>()
     .await
@@ -337,26 +352,58 @@ async fn download_java(version: u64) -> Result<(), Box<dyn std::error::Error>>  
     let mut name = "";
 
     if version == 17 {
-        windows_url = &javas_manifest.windows_x64.java_runtime_gamma[0].manifest.url;
-        windows_arm64_url = &javas_manifest.windows_arm64.java_runtime_gamma[0].manifest.url;
+        windows_url = &javas_manifest.windows_x64.java_runtime_gamma[0]
+            .manifest
+            .url;
+        windows_arm64_url = &javas_manifest.windows_arm64.java_runtime_gamma[0]
+            .manifest
+            .url;
         mac_os_url = &javas_manifest.mac_os.java_runtime_gamma[0].manifest.url;
-        mac_os_arm64_url = &javas_manifest.mac_os_arm64.java_runtime_gamma[0].manifest.url;
+        mac_os_arm64_url = &javas_manifest.mac_os_arm64.java_runtime_gamma[0]
+            .manifest
+            .url;
         linux_url = &javas_manifest.linux.java_runtime_gamma[0].manifest.url;
         name = "java_runtime_gamma"
     } else {
-        windows_url = &javas_manifest.windows_x64.java_runtime_delta[0].manifest.url;
-        windows_arm64_url = &javas_manifest.windows_arm64.java_runtime_delta[0].manifest.url;
+        windows_url = &javas_manifest.windows_x64.java_runtime_delta[0]
+            .manifest
+            .url;
+        windows_arm64_url = &javas_manifest.windows_arm64.java_runtime_delta[0]
+            .manifest
+            .url;
         mac_os_url = &javas_manifest.mac_os.java_runtime_delta[0].manifest.url;
-        mac_os_arm64_url = &javas_manifest.mac_os_arm64.java_runtime_delta[0].manifest.url;
+        mac_os_arm64_url = &javas_manifest.mac_os_arm64.java_runtime_delta[0]
+            .manifest
+            .url;
         linux_url = &javas_manifest.linux.java_runtime_delta[0].manifest.url;
         name = "java_runtime_delta"
     }
 
-    let windows = reqwest::get(windows_url).await?.json::<SelectedJavaManifest>().await.unwrap();
-    let windows_arm64 = reqwest::get(windows_arm64_url).await?.json::<SelectedJavaManifest>().await.unwrap();
-    let mac_os = reqwest::get(mac_os_url).await?.json::<SelectedJavaManifest>().await.unwrap();
-    let mac_os_arm64 = reqwest::get(mac_os_arm64_url).await?.json::<SelectedJavaManifest>().await.unwrap();
-    let linux = reqwest::get(linux_url).await?.json::<SelectedJavaManifest>().await.unwrap();
+    let windows = reqwest::get(windows_url)
+        .await?
+        .json::<SelectedJavaManifest>()
+        .await
+        .unwrap();
+    let windows_arm64 = reqwest::get(windows_arm64_url)
+        .await?
+        .json::<SelectedJavaManifest>()
+        .await
+        .unwrap();
+    let mac_os = reqwest::get(mac_os_url)
+        .await?
+        .json::<SelectedJavaManifest>()
+        .await
+        .unwrap();
+    let mac_os_arm64 = reqwest::get(mac_os_arm64_url)
+        .await?
+        .json::<SelectedJavaManifest>()
+        .await
+        .unwrap();
+    let linux = reqwest::get(linux_url)
+        .await?
+        .json::<SelectedJavaManifest>()
+        .await
+        .unwrap();
 
     let platforms = vec![
         ("windows", windows),
@@ -372,6 +419,6 @@ async fn download_java(version: u64) -> Result<(), Box<dyn std::error::Error>>  
             Err(e) => eprintln!("Error downloading for {}: {:?}", platform_name, e),
         }
     }
-    
+
     Ok(())
 }
