@@ -2,7 +2,7 @@
 name = "neko-manifest-cli"
 authors = ["michitta"]
 repository = "https://github.com/michitta/neko-manifest-cli"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 
 [profile.release]
@@ -15,7 +15,6 @@ strip = true      # Remove debug symbols
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.98"
 clap = { version = "4.5.2", features = ["derive"] }
 futures = "0.3.31"
 reqwest = { version = "0.11.25", features = ["json"] }
