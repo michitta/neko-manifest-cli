@@ -10,7 +10,20 @@ pub struct Cli {
     pub loader: String,
     pub loader_version: String,
     pub mc_version: String,
-    pub java_version: Option<String>
+    pub download_java: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Libraries {
+    pub name: String,
+    pub url: String,
+    pub sha1: Option<String>,
+}
+
+pub struct MojangResult {
+    pub libraries: Vec<Libraries>,
+    pub hash_libs: HashSet<LibraryObject>,
+    pub asset_index: String,
 }
 
 // Tools types
@@ -24,12 +37,7 @@ pub struct MojangVersionManifest {
 #[allow(non_snake_case)]
 pub struct MojangVersions {
     pub id: String,
-    pub r#type: String,
     pub url: String,
-    pub time: String,
-    pub releaseTime: String,
-    pub sha1: String,
-    pub complianceLevel: u64,
 }
 
 #[derive(Deserialize)]
@@ -43,7 +51,6 @@ pub struct FabricManifest {
 #[derive(Deserialize)]
 pub struct FabricArguments {
     pub game: Vec<String>,
-    pub jvm: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,7 +65,6 @@ pub struct FabricLibraries {
 pub struct MojangClientManifest {
     pub assetIndex: MojangAssetIndex,
     pub libraries: Vec<MojangLibrary>,
-    pub downloads: MojangDownloads,
 }
 
 #[derive(Deserialize)]
@@ -105,14 +111,7 @@ pub enum OsType {
 pub struct MojangArtifact {
     pub path: Option<String>,
     pub sha1: String,
-    pub size: u64,
     pub url: String,
-}
-
-#[derive(Deserialize)]
-pub struct MojangDownloads {
-    pub client: MojangArtifact,
-    pub client_mappings: MojangArtifact,
 }
 
 #[derive(Serialize)]
@@ -131,15 +130,6 @@ pub struct NekoManifest {
 pub struct LibraryObject {
     pub path: String,
     pub os: Vec<OsType>,
-}
-
-#[derive(Deserialize)]
-#[allow(non_snake_case)]
-pub struct ForgeManifest {
-    pub mainClass: String,
-    pub libraries: Vec<MojangLibrary>,
-    pub minecraftArguments: String,
-    pub arguments: FabricArguments,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
