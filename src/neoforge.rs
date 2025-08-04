@@ -4,7 +4,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use crate::mojang::parse_mojang;
-use crate::types::{Libraries, LibraryObject, OsType};
+use crate::types::{LibraryObject, OsType};
 
 use crate::utils::{default_jvm_args, run_loader_installer};
 use crate::{resolve_maven, utils::get_loader_install_profile, NekoManifest};
@@ -31,25 +31,19 @@ pub async fn create_neoforge_manifest(
             os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
         };
 
-        libraries.insert(lib_obj);
+        let maven = resolve_maven(&lib.name);
+
+        let name = maven.split("/").last().unwrap();
+
+        if !neoforge_manifest.arguments.jvm.join(" ").contains(name) {
+            libraries.insert(lib_obj);
+        }
     }
 
-    let neoforge_libs = neoforge_manifest.libraries.into_iter().map(|lib| Libraries {
-        name: lib.name.clone(),
-        url: lib.downloads.unwrap().artifact.url,
-        sha1: Some("".to_string()),
-    });
-
-    let libs = mojang_parsed
-        .libraries
-        .into_iter()
-        .chain(neoforge_libs)
-        .collect::<Vec<Libraries>>();
-
-    for lib in libs{
+    for lib in mojang_parsed.libraries{
         let normal_path = resolve_maven(&lib.name);
 
-        let path = format!("{}/libraries/{}", server_name, normal_path);
+        let path = format!("{}/{}", server_name, normal_path);
 
         let file_path: &Path = Path::new(&path).parent().unwrap();
 
@@ -85,13 +79,6 @@ pub async fn create_neoforge_manifest(
     let mut manifest = File::create(format!("{}/manifest.json", server_name))
         .await
         .expect("Failed to create manifest");
-
-    libraries.insert({
-        LibraryObject {
-            path: "minecraft.jar".to_owned(),
-            os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
-        }
-    });
 
     let mut jvm = default_jvm_args();
 

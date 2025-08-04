@@ -65,6 +65,12 @@ pub struct FabricLibraries {
 pub struct MojangClientManifest {
     pub assetIndex: MojangAssetIndex,
     pub libraries: Vec<MojangLibrary>,
+    pub downloads: MojangDownloads
+}
+
+#[derive(Deserialize)]
+pub struct MojangDownloads {
+    pub client: MojangArtifact,
 }
 
 #[derive(Deserialize)]
@@ -97,14 +103,14 @@ pub struct MojangOs {
     pub name: OsType,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum OsType {
-    #[serde(rename = "osx")]
-    MacOs,
     #[serde(rename = "windows")]
     Windows,
     #[serde(rename = "linux")]
     Linux,
+    #[serde(rename = "osx")]
+    MacOs,
 }
 
 #[derive(Deserialize)]

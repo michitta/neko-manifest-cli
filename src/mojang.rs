@@ -31,6 +31,11 @@ pub async fn parse_mojang(game_version: String) -> MojangResult {
 
     let mut hash_libs = HashSet::new();
 
+    hash_libs.insert(LibraryObject {
+        path: "minecraft.jar".to_owned(),
+        os: [OsType::Windows, OsType::Linux, OsType::MacOs].to_vec(),
+    });
+    
     for lib in &mojang_manifest.libraries {
         if lib.downloads.artifact.path.is_none() {
             continue;
@@ -80,13 +85,25 @@ pub async fn parse_mojang(game_version: String) -> MojangResult {
             oss.remove(&OsType::Windows);
         }
 
+        let mut os_vec = Vec::new();
+
+        if oss.contains(&OsType::Windows) {
+            os_vec.push(OsType::Windows);
+        }
+        if oss.contains(&OsType::Linux) {
+            os_vec.push(OsType::Linux);
+        }
+        if oss.contains(&OsType::MacOs) {
+            os_vec.push(OsType::MacOs);
+        }
+
         hash_libs.insert(LibraryObject {
-            path: format!("libraries/{}", resolve_maven(&lib.name)),
-            os: oss.into_iter().collect(),
+            path: format!("{}", resolve_maven(&lib.name)),
+            os: os_vec,
         });
     }
 
-    let mojang_libs = mojang_manifest
+    let mut mojang_libs: Vec<Libraries> = mojang_manifest
         .libraries
         .into_iter()
         .map(|lib| Libraries {
@@ -95,6 +112,12 @@ pub async fn parse_mojang(game_version: String) -> MojangResult {
             sha1: Some(lib.downloads.artifact.sha1.clone()),
         })
         .collect();
+
+    mojang_libs.push(Libraries {
+        name: "minecraft.jar".to_owned(),
+        url: mojang_manifest.downloads.client.url,
+        sha1: Some(mojang_manifest.downloads.client.sha1),
+    });
 
     MojangResult {
         libraries: mojang_libs,

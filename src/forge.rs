@@ -22,8 +22,6 @@ pub async fn create_forge_manifest(
 
     libraries.extend(mojang_parsed.hash_libs);
 
-    println!("{:?}", forge_manifest);
-
     for lib in forge_manifest.libraries {
         if lib.downloads.is_none() {
             continue;
@@ -33,13 +31,19 @@ pub async fn create_forge_manifest(
             os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
         };
 
-        libraries.insert(lib_obj);
+        let maven = resolve_maven(&lib.name);
+
+        let name = maven.split("/").last().unwrap();
+
+        if !forge_manifest.arguments.jvm.join(" ").contains(name) {
+            libraries.insert(lib_obj);
+        }
     }
 
     for lib in mojang_parsed.libraries {
         let normal_path = resolve_maven(&lib.name);
 
-        let path = format!("{}/libraries/{}", server_name, normal_path);
+        let path = format!("{}/{}", server_name, normal_path);
 
         let file_path: &Path = Path::new(&path).parent().unwrap();
 
@@ -75,13 +79,6 @@ pub async fn create_forge_manifest(
     let mut manifest = File::create(format!("{}/manifest.json", server_name))
         .await
         .expect("Failed to create manifest");
-
-    libraries.insert({
-        LibraryObject {
-            path: "minecraft.jar".to_owned(),
-            os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
-        }
-    });
 
     
     let mut jvm = default_jvm_args();

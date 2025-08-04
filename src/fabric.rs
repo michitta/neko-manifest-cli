@@ -52,7 +52,7 @@ pub async fn create_fabric_manifest(
     for lib in &libs {
         let normal_path = resolve_maven(&lib.name);
 
-        let path = format!("{}/libraries/{}", server_name, normal_path);
+        let path = format!("{}/{}", server_name, normal_path);
 
         let file_path: &Path = Path::new(&path).parent().unwrap();
 
@@ -78,13 +78,6 @@ pub async fn create_fabric_manifest(
     let mut manifest = File::create(format!("{}/manifest.json", server_name))
         .await
         .expect("Failed to create manifest");
-
-    libraries.insert({
-        LibraryObject {
-            path: "minecraft.jar".to_owned(),
-            os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
-        }
-    });
 
     let neko_manifest = NekoManifest {
         mainclass: fabric_manifest.mainClass,

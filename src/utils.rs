@@ -152,12 +152,11 @@ pub async fn run_loader_installer(
     let mut file = File::create(installer_path_ref).expect("Failed to create installer file");
     std::io::copy(&mut Cursor::new(resp), &mut file).expect("Failed to write installer file");
 
+    let args = ["-jar", &format!("{}/{}", &server_name.clone(), installer_name), "--installClient", &server_name.clone()];
+
     let status = Command::new("java")
-        .arg("-Dminecraft.home=.")
-        .arg("-jar")
-        .arg(installer_name)
-        .arg("--installClient")
-        .current_dir(server_name.clone())
+        .args(args)
+        .current_dir(".")
         .status()
         .expect("Failed to run installer");
 
@@ -169,8 +168,8 @@ pub async fn run_loader_installer(
 
     fs::remove_file(profiles_path).unwrap();
     fs::remove_file(installer_path).unwrap();
-    fs::remove_file(Path::new(&server_name).join("installer.log")).unwrap();
     if loader_type == "forge" {
-        fs::remove_dir_all(Path::new(&server_name).join("versions")).unwrap();
+        fs::remove_file(Path::new(&server_name).join("installer.log")).unwrap();
     }
+    fs::remove_dir_all(Path::new(&server_name).join("versions")).unwrap();
 }
