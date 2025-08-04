@@ -18,8 +18,9 @@ mod utils;
 // Mod loaders
 mod fabric;
 mod forge;
+mod neoforge;
 
-use crate::fabric::create_fabric_manifest;
+use crate::{fabric::create_fabric_manifest, neoforge::create_neoforge_manifest};
 
 #[tokio::main]
 async fn main() {
@@ -63,6 +64,15 @@ async fn main() {
     } else if args.loader == "forge" {
         println!("Starting forge manifest creation...");
         create_forge_manifest(
+            args.server_name,
+            args.loader_version,
+            args.mc_version.clone(),
+        )
+        .await
+        .unwrap();
+    } else if args.loader == "neoforge" {
+        println!("Starting neoforge manifest creation...");
+        create_neoforge_manifest(
             args.server_name,
             args.loader_version,
             args.mc_version.clone(),

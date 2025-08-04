@@ -49,15 +49,23 @@ pub fn default_jvm_args() -> Vec<String> {
     ]
 }
 
-pub async fn get_forge_install_profile(
+pub async fn get_loader_install_profile(
+    loader_type: &str,
     mc_version: &str,
-    forge_version: &str,
+    loader_version: &str,
 ) -> Result<ForgeClientManifest, Box<dyn std::error::Error>> {
-    let url = format!(
-        "https://maven.minecraftforge.net/net/minecraftforge/forge/{mc}-{forge}/forge-{mc}-{forge}-installer.jar",
-        mc = mc_version,
-        forge = forge_version
-    );
+    let url = match loader_type {
+        "forge" => format!(
+            "https://maven.minecraftforge.net/net/minecraftforge/forge/{mc}-{loader}/forge-{mc}-{loader}-installer.jar",
+            mc = mc_version,
+            loader = loader_version
+        ),
+        "neoforge" => format!(
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/{loader}/neoforge-{loader}-installer.jar",
+            loader = loader_version
+        ),
+        _ => return Err("Unknown loader type".into()),
+    };
 
     let client = Client::new();
     let resp = client.get(&url).send().await?.bytes().await?;
@@ -71,33 +79,29 @@ pub async fn get_forge_install_profile(
         version_file.read_to_string(&mut version)?;
     }
 
-    // let mut profile = String::new();
-    // {
-    //     let mut profile_file = archive.by_name("install_profile.json")?;
-    //     use std::io::Read;
-    //     profile_file.read_to_string(&mut profile)?;
-    // }
-
     let version_json: ForgeClientManifest = serde_json::from_str(&version)?;
-    // let profile_json: ForgeInstallProfile = serde_json::from_str(&profile)?;
 
-    let result: ForgeClientManifest = ForgeClientManifest {
-        id: version_json.id,
-        inheritsFrom: version_json.inheritsFrom,
-        mainClass: version_json.mainClass,
-        libraries: version_json.libraries,
-        arguments: version_json.arguments,
-    };
-
-    Ok(result)
+    Ok(version_json)
 }
 
-pub async fn run_forge_installer(mc_version: String, loader_version: String, server_name: String) {
-    let url = format!(
-        "https://maven.minecraftforge.net/net/minecraftforge/forge/{mc}-{forge}/forge-{mc}-{forge}-installer.jar",
-        mc = mc_version,
-        forge = loader_version
-    );
+pub async fn run_loader_installer(
+    loader_type: &str,
+    mc_version: String,
+    loader_version: String,
+    server_name: String,
+) {
+    let url = match loader_type {
+        "forge" => format!(
+            "https://maven.minecraftforge.net/net/minecraftforge/forge/{mc}-{loader}/forge-{mc}-{loader}-installer.jar",
+            mc = mc_version,
+            loader = loader_version
+        ),
+        "neoforge" => format!(
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/{loader}/neoforge-{loader}-installer.jar",
+            loader = loader_version
+        ),
+        _ => panic!("Unknown loader type"),
+    };
 
     let client = Client::new();
     let resp = client
@@ -109,11 +113,16 @@ pub async fn run_forge_installer(mc_version: String, loader_version: String, ser
         .await
         .expect("Failed to read installer bytes");
 
-    let installer_path = format!("{server}/forge-installer.jar", server = server_name.clone());
+    let installer_name = match loader_type {
+        "forge" => "forge-installer.jar",
+        "neoforge" => "neoforge-installer.jar",
+        _ => "installer.jar",
+    };
+
+    let installer_path = format!("{server}/{installer}", server = server_name, installer = installer_name);
     let installer_path_ref = Path::new(&installer_path);
 
-    // Ensure the server directory exists
-    create_dir_all(server_name.clone()).expect("Failed to create target directory");
+    create_dir_all(&server_name).expect("Failed to create target directory");
 
     let profiles_path = Path::new(&server_name).join("launcher_profiles.json");
 
@@ -140,22 +149,20 @@ pub async fn run_forge_installer(mc_version: String, loader_version: String, ser
         .write_all(json.as_bytes())
         .expect("Failed to write profiles json");
 
-    // Write the installer to disk
     let mut file = File::create(installer_path_ref).expect("Failed to create installer file");
     std::io::copy(&mut Cursor::new(resp), &mut file).expect("Failed to write installer file");
 
-    // Run the installer
     let status = Command::new("java")
         .arg("-Dminecraft.home=.")
         .arg("-jar")
-        .arg("forge-installer.jar")
+        .arg(installer_name)
         .arg("--installClient")
         .current_dir(server_name.clone())
         .status()
         .expect("Failed to run installer");
 
     if !status.success() {
-        panic!("Forge installer failed with status: {}", status);
+        panic!("Installer failed with status: {}", status);
     }
 
     println!("Cleanup");
@@ -163,5 +170,7 @@ pub async fn run_forge_installer(mc_version: String, loader_version: String, ser
     fs::remove_file(profiles_path).unwrap();
     fs::remove_file(installer_path).unwrap();
     fs::remove_file(Path::new(&server_name).join("installer.log")).unwrap();
-    fs::remove_dir_all(Path::new(&server_name).join("versions")).unwrap();
+    if loader_type == "forge" {
+        fs::remove_dir_all(Path::new(&server_name).join("versions")).unwrap();
+    }
 }

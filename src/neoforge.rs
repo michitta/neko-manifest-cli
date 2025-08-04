@@ -4,39 +4,49 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use crate::mojang::parse_mojang;
-use crate::types::{LibraryObject, OsType};
+use crate::types::{Libraries, LibraryObject, OsType};
 
 use crate::utils::{default_jvm_args, run_loader_installer};
 use crate::{resolve_maven, utils::get_loader_install_profile, NekoManifest};
 
-pub async fn create_forge_manifest(
+pub async fn create_neoforge_manifest(
     server_name: String,
     loader_version: String,
     mc_version: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mojang_parsed = parse_mojang(mc_version.clone()).await;
 
-    let forge_manifest = get_loader_install_profile("forge", &mc_version, &loader_version).await?;
+    let neoforge_manifest = get_loader_install_profile("neoforge", &mc_version, &loader_version).await?;
 
     let mut libraries = HashSet::new();
 
     libraries.extend(mojang_parsed.hash_libs);
 
-    println!("{:?}", forge_manifest);
-
-    for lib in forge_manifest.libraries {
+    for lib in &neoforge_manifest.libraries {
         if lib.downloads.is_none() {
             continue;
         }
         let lib_obj = LibraryObject {
-            path: format!("libraries/{}", lib.downloads.unwrap().artifact.path),
+            path: format!("libraries/{}", lib.clone().downloads.unwrap().artifact.path),
             os: vec![OsType::Windows, OsType::Linux, OsType::MacOs],
         };
 
         libraries.insert(lib_obj);
     }
 
-    for lib in mojang_parsed.libraries {
+    let neoforge_libs = neoforge_manifest.libraries.into_iter().map(|lib| Libraries {
+        name: lib.name.clone(),
+        url: lib.downloads.unwrap().artifact.url,
+        sha1: Some("".to_string()),
+    });
+
+    let libs = mojang_parsed
+        .libraries
+        .into_iter()
+        .chain(neoforge_libs)
+        .collect::<Vec<Libraries>>();
+
+    for lib in libs{
         let normal_path = resolve_maven(&lib.name);
 
         let path = format!("{}/libraries/{}", server_name, normal_path);
@@ -70,7 +80,7 @@ pub async fn create_forge_manifest(
         println!("{}: {} -> {:?}", lib.name, lib.url, file_path);
     }
 
-    run_loader_installer("forge", mc_version, loader_version, server_name.clone()).await;
+    run_loader_installer("neoforge", mc_version, loader_version, server_name.clone()).await;
 
     let mut manifest = File::create(format!("{}/manifest.json", server_name))
         .await
@@ -83,17 +93,16 @@ pub async fn create_forge_manifest(
         }
     });
 
-    
     let mut jvm = default_jvm_args();
 
-    jvm.extend(forge_manifest.arguments.jvm);
+    jvm.extend(neoforge_manifest.arguments.jvm);
 
     let neko_manifest = NekoManifest {
-        mainclass: forge_manifest.mainClass,
+        mainclass: neoforge_manifest.mainClass,
         assetIndex: mojang_parsed.asset_index,
         libraries,
         jvm,
-        game: forge_manifest.arguments.game,
+        game: neoforge_manifest.arguments.game,
         verify: vec![
             "mods".to_string(),
             "libraries".to_string(),
