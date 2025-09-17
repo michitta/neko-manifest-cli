@@ -14,7 +14,7 @@ pub fn resolve_maven(maven: &str) -> String {
     let parts: Vec<&str> = maven.split(':').collect();
 
     if parts.len() < 3 {
-        panic!("Invalid maven coordinate: {}", maven);
+        return format!("{}", maven);
     }
 
     let group = parts[0].replace('.', "/");
@@ -119,7 +119,11 @@ pub async fn run_loader_installer(
         _ => "installer.jar",
     };
 
-    let installer_path = format!("{server}/{installer}", server = server_name, installer = installer_name);
+    let installer_path = format!(
+        "{server}/{installer}",
+        server = server_name,
+        installer = installer_name
+    );
     let installer_path_ref = Path::new(&installer_path);
 
     create_dir_all(&server_name).expect("Failed to create target directory");
@@ -152,7 +156,12 @@ pub async fn run_loader_installer(
     let mut file = File::create(installer_path_ref).expect("Failed to create installer file");
     std::io::copy(&mut Cursor::new(resp), &mut file).expect("Failed to write installer file");
 
-    let args = ["-jar", &format!("{}/{}", &server_name.clone(), installer_name), "--installClient", &server_name.clone()];
+    let args = [
+        "-jar",
+        &format!("{}/{}", &server_name.clone(), installer_name),
+        "--installClient",
+        &server_name.clone(),
+    ];
 
     let status = Command::new("java")
         .args(args)

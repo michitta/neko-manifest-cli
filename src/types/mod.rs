@@ -51,6 +51,7 @@ pub struct FabricManifest {
 #[derive(Deserialize)]
 pub struct FabricArguments {
     pub game: Vec<String>,
+    pub jvm: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -65,7 +66,7 @@ pub struct FabricLibraries {
 pub struct MojangClientManifest {
     pub assetIndex: MojangAssetIndex,
     pub libraries: Vec<MojangLibrary>,
-    pub downloads: MojangDownloads
+    pub downloads: MojangDownloads,
 }
 
 #[derive(Deserialize)]

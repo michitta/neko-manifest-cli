@@ -84,9 +84,9 @@ async fn main() {
     }
 }
 
-fn resolve_maven(file: &str) -> String {
-    if file == "minecraft.jar"{
-        return "minecraft.jar".to_owned()
+pub fn resolve_maven(file: &str) -> String {
+    if file == "minecraft.jar" {
+        return "minecraft.jar".to_owned();
     }
     let mut parts = file.split(':');
     let path = parts.next().expect("No path").replace(".", "/");
@@ -96,7 +96,7 @@ fn resolve_maven(file: &str) -> String {
     if let Some(more) = parts.next() {
         filename.push_str(&format!("-{}", more));
     }
-    if file == "minecraft.jar"{
+    if file == "minecraft.jar" {
         filename
     } else {
         format!("libraries/{}", filename)

@@ -79,11 +79,15 @@ pub async fn create_fabric_manifest(
         .await
         .expect("Failed to create manifest");
 
+    let mut jvm = default_jvm_args();
+
+    jvm.extend(fabric_manifest.arguments.jvm);
+
     let neko_manifest = NekoManifest {
         mainclass: fabric_manifest.mainClass,
         assetIndex: mojang_parsed.asset_index,
         libraries,
-        jvm: default_jvm_args(),
+        jvm,
         game: fabric_manifest.arguments.game,
         verify: vec![
             "mods".to_string(),
